@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CalendarDashboard from '../components/calendar/CalendarDashboard';
+---
+
+<BaseLayout title="Content Calendar | RevOps Partner" description="Manage your automated content calendar">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Content Calendar</h1>
+      <p class="mt-2 text-gray-600">Manage AI-generated articles and scheduling</p>
+    </div>
+
+    <CalendarDashboard client:load />
+  </div>
+</BaseLayout>
