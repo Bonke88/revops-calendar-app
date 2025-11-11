@@ -32,7 +32,7 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
       const result = await response.json();
 
       if (result.success) {
-        setScheduledArticles(result.entries);
+        setScheduledArticles(result.data || []);
       }
     } catch (error) {
       console.error('Failed to load scheduled articles:', error);
@@ -41,11 +41,11 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
 
   async function loadRunningJobs() {
     try {
-      const response = await fetch('/api/calendar?status=in_progress');
+      const response = await fetch('/api/calendar?status=generating');
       const result = await response.json();
 
       if (result.success) {
-        setRunningJobs(result.entries || []);
+        setRunningJobs(result.data || []);
       }
     } catch (error) {
       console.error('Failed to load running jobs:', error);
