@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'preact/hooks';
 import { type CalendarEntry } from '../../lib/calendarApi';
+import StrategySummarizer from './StrategySummarizer';
 
 interface StatsProps {
   stats: {
@@ -12,6 +14,48 @@ interface StatsProps {
 }
 
 export default function CalendarStats({ stats, onRefresh }: StatsProps) {
+  const [scheduledArticles, setScheduledArticles] = useState<CalendarEntry[]>([]);
+  const [runningJobs, setRunningJobs] = useState<CalendarEntry[]>([]);
+  const [loadingScheduled, setLoadingScheduled] = useState(false);
+
+  useEffect(() => {
+    loadScheduledArticles();
+    loadRunningJobs();
+
+    // Poll for running jobs every 10 seconds
+    const interval = setInterval(loadRunningJobs, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function loadScheduledArticles() {
+    try {
+      setLoadingScheduled(true);
+      const response = await fetch('/api/calendar?status=scheduled&limit=5');
+      const result = await response.json();
+
+      if (result.success) {
+        setScheduledArticles(result.entries);
+      }
+    } catch (error) {
+      console.error('Failed to load scheduled articles:', error);
+    } finally {
+      setLoadingScheduled(false);
+    }
+  }
+
+  async function loadRunningJobs() {
+    try {
+      const response = await fetch('/api/calendar?status=generating&status=in_progress');
+      const result = await response.json();
+
+      if (result.success) {
+        setRunningJobs(result.entries || []);
+      }
+    } catch (error) {
+      console.error('Failed to load running jobs:', error);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Today's Article */}
@@ -36,6 +80,37 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Running Jobs Activity Log */}
+      {runningJobs.length > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center">
+            <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Active Workflows ({runningJobs.length})
+          </h3>
+          <div className="space-y-3">
+            {runningJobs.map(job => (
+              <div key={job.id} className="bg-white border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{job.keyword}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Status: {job.status === 'generating' ? '⚡ Generating Content' : '📝 Writing Article'}
+                    </p>
+                  </div>
+                  <div className="text-purple-600">
+                    <svg className="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -107,6 +182,43 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
           </a>
         </div>
       </div>
+
+      {/* Strategy Summarizer */}
+      <StrategySummarizer />
+
+      {/* Scheduled Articles */}
+      {scheduledArticles.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Scheduled Articles ({scheduledArticles.length})
+          </h3>
+          <div className="space-y-3">
+            {scheduledArticles.map(article => (
+              <div key={article.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">{article.keyword}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {article.article_type} • {article.search_volume?.toLocaleString() || 'N/A'} searches/mo •
+                      Difficulty: {article.difficulty || 'N/A'}
+                    </p>
+                    {article.planned_date && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        📅 Scheduled for: {new Date(article.planned_date).toLocaleDateString()}
+                      </p>
+                    )}
+                    {article.created_at && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Added: {new Date(article.created_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Automation Status */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">

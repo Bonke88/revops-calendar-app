@@ -419,6 +419,12 @@ function ArticleCard({ entry, selected, onToggle }: ArticleCardProps) {
           {entry.notes && (
             <p className="mt-3 text-sm text-gray-600 ml-8">{entry.notes}</p>
           )}
+
+          {entry.created_at && (
+            <p className="mt-2 text-xs text-gray-400 ml-8">
+              Added: {new Date(entry.created_at).toLocaleDateString()}
+            </p>
+          )}
         </div>
 
         {/* Type Badge */}
