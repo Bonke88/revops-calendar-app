@@ -249,7 +249,7 @@ export default function ApprovalFlow({ onApprove }: ApprovalFlowProps) {
             <input
               type="checkbox"
               checked={autoSchedule}
-              onChange={(e) => setAutoSchedule(e.target.checked)}
+              onChange={(e) => setAutoSchedule(e.currentTarget.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="ml-2 text-sm text-gray-700">Auto-schedule articles</span>
@@ -260,7 +260,7 @@ export default function ApprovalFlow({ onApprove }: ApprovalFlowProps) {
               <label className="text-sm text-gray-700">Articles per day:</label>
               <select
                 value={perDay}
-                onChange={(e) => setPerDay(parseInt(e.target.value))}
+                onChange={(e) => setPerDay(parseInt(e.currentTarget.value))}
                 className="rounded border-gray-300 text-sm"
               >
                 <option value={1}>1</option>
@@ -313,7 +313,7 @@ export default function ApprovalFlow({ onApprove }: ApprovalFlowProps) {
               </p>
               <textarea
                 value={declineReason}
-                onChange={(e) => setDeclineReason(e.target.value)}
+                onChange={(e) => setDeclineReason(e.currentTarget.value)}
                 placeholder="e.g., Too competitive, not relevant to our niche, already covered..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 rows={4}
