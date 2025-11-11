@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+@source "../**/*.{astro,tsx,ts,jsx,js}";
+
+/* Ensure buttons and interactive elements work properly */
+button {
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Ensure interactive elements are clickable */
+a, input, select, textarea {
+  pointer-events: auto;
+  position: relative;
+}
+
+/* Fix potential overlay issues */
+.fixed {
+  z-index: 50;
+}
+
+/* Ensure modals are on top */
+[role="dialog"], .modal {
+  z-index: 100;
+}
