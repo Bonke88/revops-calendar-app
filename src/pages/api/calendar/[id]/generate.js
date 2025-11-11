@@ -8,12 +8,6 @@
 export const prerender = false;
 
 import { createClient } from '@supabase/supabase-js';
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -83,22 +77,49 @@ export async function POST({ params }) {
       throw updateError;
     }
 
-    // Trigger the workflow in background
-    const workflowPath = path.resolve(__dirname, '../../../../../content-workflow/orchestrator-full.js');
+    // Trigger GitHub Actions workflow via repository_dispatch
     const keyword = entry.keyword;
     const type = entry.article_type || 'guide';
 
-    // Spawn the workflow process in detached mode
-    const child = spawn('node', [workflowPath, '--keyword', keyword, '--type', type], {
-      detached: true,
-      stdio: 'ignore',
-      cwd: path.resolve(__dirname, '../../../../../content-workflow')
-    });
+    const githubToken = import.meta.env.GITHUB_TOKEN;
+    const githubRepo = 'Bonke88/revops-partner'; // Update if different
 
-    // Detach the child process so it runs independently
-    child.unref();
+    if (githubToken) {
+      try {
+        const dispatchResponse = await fetch(
+          `https://api.github.com/repos/${githubRepo}/dispatches`,
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': `Bearer ${githubToken}`,
+              'X-GitHub-Api-Version': '2022-11-28'
+            },
+            body: JSON.stringify({
+              event_type: 'generate-article',
+              client_payload: {
+                keyword,
+                article_type: type,
+                calendar_id: id
+              }
+            })
+          }
+        );
 
-    console.log(`✓ Workflow triggered for keyword: "${keyword}" (ID: ${id})`);
+        if (!dispatchResponse.ok) {
+          console.error('Failed to trigger GitHub Actions:', await dispatchResponse.text());
+          throw new Error('Failed to trigger GitHub Actions workflow');
+        }
+
+        console.log(`✓ GitHub Actions workflow triggered for keyword: "${keyword}" (ID: ${id})`);
+      } catch (githubError) {
+        console.error('GitHub Actions trigger error:', githubError);
+        // Don't fail the request - the status is already set to generating
+        // User can manually trigger from GitHub if needed
+      }
+    } else {
+      console.warn('GITHUB_TOKEN not configured - workflow must be triggered manually');
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -107,7 +128,7 @@ export async function POST({ params }) {
         id: entry.id,
         keyword: entry.keyword,
         status: 'generating',
-        estimatedTime: '10-15 minutes'
+        estimatedTime: '15-20 minutes'
       }
     }), {
       status: 200,
