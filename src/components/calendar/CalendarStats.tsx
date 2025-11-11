@@ -16,7 +16,6 @@ interface StatsProps {
 export default function CalendarStats({ stats, onRefresh }: StatsProps) {
   const [scheduledArticles, setScheduledArticles] = useState<CalendarEntry[]>([]);
   const [runningJobs, setRunningJobs] = useState<CalendarEntry[]>([]);
-  const [loadingScheduled, setLoadingScheduled] = useState(false);
 
   useEffect(() => {
     loadScheduledArticles();
@@ -29,7 +28,6 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
 
   async function loadScheduledArticles() {
     try {
-      setLoadingScheduled(true);
       const response = await fetch('/api/calendar?status=scheduled&limit=5');
       const result = await response.json();
 
@@ -38,14 +36,12 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
       }
     } catch (error) {
       console.error('Failed to load scheduled articles:', error);
-    } finally {
-      setLoadingScheduled(false);
     }
   }
 
   async function loadRunningJobs() {
     try {
-      const response = await fetch('/api/calendar?status=generating&status=in_progress');
+      const response = await fetch('/api/calendar?status=in_progress');
       const result = await response.json();
 
       if (result.success) {
@@ -100,7 +96,7 @@ export default function CalendarStats({ stats, onRefresh }: StatsProps) {
                   <div>
                     <p className="font-semibold text-gray-900">{job.keyword}</p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Status: {job.status === 'generating' ? '⚡ Generating Content' : '📝 Writing Article'}
+                      Status: ⚡ Generating Article
                     </p>
                   </div>
                   <div className="text-purple-600">
