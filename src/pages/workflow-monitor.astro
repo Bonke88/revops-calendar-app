@@ -1,0 +1,356 @@
+---
+export const prerender = false;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Monitor - RevOps Content</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .workflow-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .workflow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .keyword {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2563eb;
+    }
+    .workflow-id {
+      font-size: 12px;
+      color: #999;
+      font-family: monospace;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      transition: width 0.3s ease;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f9f9f9;
+      border: 1px solid #e5e5e5;
+    }
+    .step.completed {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+    .step.in-progress {
+      background: #fef3c7;
+      border-color: #fde68a;
+      animation: pulse 2s infinite;
+    }
+    .step.failed {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #d1d5db;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .step.completed .step-number {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+    .step.in-progress .step-number {
+      background: #f59e0b;
+      color: white;
+      border-color: #f59e0b;
+    }
+    .step.failed .step-number {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+    .step-info {
+      flex: 1;
+    }
+    .step-name {
+      font-weight: 500;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .step-status {
+      font-size: 12px;
+      color: #666;
+    }
+    .step-cost {
+      font-size: 11px;
+      color: #999;
+    }
+    .refresh-btn {
+      padding: 8px 16px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .refresh-btn:hover {
+      background: #2563eb;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-badge.active {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-badge.completed {
+      background: #dcfce7;
+      color: #14532d;
+    }
+    .no-workflows {
+      text-align: center;
+      padding: 60px;
+      color: #999;
+    }
+    .total-cost {
+      font-size: 14px;
+      color: #666;
+      margin-left: 16px;
+    }
+    .timestamp {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Content Generation Monitor</h1>
+    <p class="subtitle">Real-time progress tracking for article generation workflows</p>
+
+    <div id="monitor-root">
+      <div class="workflow-card">
+        <p style="text-align: center; color: #999;">Loading workflows...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://oyzwyitlzvwbrkiiqids.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95end5aXRsenZ3YnJraWlxaWRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxODcyNzYsImV4cCI6MjA3Nzc2MzI3Nn0.H5G-bP6cOEOwcdF1O1oV7hLOBFz2XuMx0vrTvZbQoqE';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const WORKFLOW_STEPS = [
+      { step: 1, name: 'SERP Analysis', description: 'Analyzing search results' },
+      { step: 2, name: 'Content Scraping', description: 'Extracting competitor content' },
+      { step: 3, name: 'Gap Identification', description: 'Finding content opportunities' },
+      { step: 4, name: 'Brief Generation', description: 'Creating content brief' },
+      { step: 5, name: 'Deep Research', description: 'Researching topic thoroughly' },
+      { step: 6, name: 'Dual Writing', description: 'Creating two variations' },
+      { step: 7, name: 'Evaluation', description: 'Analyzing variations' },
+      { step: 8, name: 'Synthesis', description: 'Merging best elements' },
+      { step: 9, name: 'Finalization', description: 'Polishing and SEO optimization' },
+      { step: 10, name: 'Publication', description: 'Publishing to site' }
+    ];
+
+    async function fetchWorkflows() {
+      try {
+        // Get recent workflows
+        const { data: workflows, error } = await supabase
+          .from('workflow_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error('Error fetching workflows:', error);
+          return [];
+        }
+
+        // Group by workflow_id
+        const groupedWorkflows = {};
+        workflows.forEach(log => {
+          if (!groupedWorkflows[log.workflow_id]) {
+            groupedWorkflows[log.workflow_id] = {
+              id: log.workflow_id,
+              keyword: log.keyword,
+              type: log.workflow_type,
+              steps: [],
+              totalCost: 0,
+              startTime: log.created_at
+            };
+          }
+          groupedWorkflows[log.workflow_id].steps.push(log);
+          groupedWorkflows[log.workflow_id].totalCost += log.cost || 0;
+        });
+
+        return Object.values(groupedWorkflows).sort((a, b) =>
+          new Date(b.startTime) - new Date(a.startTime)
+        );
+      } catch (err) {
+        console.error('Failed to fetch workflows:', err);
+        return [];
+      }
+    }
+
+    function renderWorkflow(workflow) {
+      const completedSteps = workflow.steps.filter(s => s.status === 'completed').length;
+      const progress = (completedSteps / 10) * 100;
+      const isActive = workflow.steps.some(s => s.status === 'started');
+
+      // Create step status map
+      const stepStatuses = {};
+      workflow.steps.forEach(log => {
+        if (log.step) {
+          stepStatuses[log.step] = {
+            status: log.status,
+            cost: log.cost,
+            timestamp: log.created_at
+          };
+        }
+      });
+
+      return `
+        <div class="workflow-card">
+          <div class="workflow-header">
+            <div>
+              <div class="keyword">${workflow.keyword || 'Unknown Keyword'}</div>
+              <div class="workflow-id">ID: ${workflow.id}</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <span class="status-badge ${isActive ? 'active' : 'completed'}">
+                ${isActive ? '⚡ In Progress' : '✅ Complete'}
+              </span>
+              <span class="total-cost">Cost: $${workflow.totalCost.toFixed(3)}</span>
+            </div>
+          </div>
+
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+
+          <div class="steps-grid">
+            ${WORKFLOW_STEPS.map(stepDef => {
+              const stepData = stepStatuses[stepDef.step] || {};
+              const status = stepData.status || 'pending';
+              const statusClass = status === 'completed' ? 'completed' :
+                                 status === 'started' ? 'in-progress' :
+                                 status === 'failed' ? 'failed' : '';
+
+              return `
+                <div class="step ${statusClass}">
+                  <div class="step-number">${stepDef.step}</div>
+                  <div class="step-info">
+                    <div class="step-name">${stepDef.name}</div>
+                    <div class="step-status">
+                      ${status === 'completed' ? '✓ Complete' :
+                        status === 'started' ? '⏳ Running...' :
+                        status === 'failed' ? '✗ Failed' : '○ Pending'}
+                    </div>
+                    ${stepData.cost ? `<div class="step-cost">$${stepData.cost.toFixed(3)}</div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          ${workflow.steps.length > 0 ? `
+            <div class="timestamp">
+              Started: ${new Date(workflow.startTime).toLocaleString()}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    async function updateMonitor() {
+      const root = document.getElementById('monitor-root');
+      const workflows = await fetchWorkflows();
+
+      if (workflows.length === 0) {
+        root.innerHTML = `
+          <div class="no-workflows">
+            <p>No workflows found yet.</p>
+            <p>Trigger "Generate Now" from the calendar to start a workflow.</p>
+          </div>
+        `;
+      } else {
+        root.innerHTML = `
+          <div style="text-align: right; margin-bottom: 16px;">
+            <button class="refresh-btn" onclick="updateMonitor()">🔄 Refresh</button>
+          </div>
+          ${workflows.map(renderWorkflow).join('')}
+        `;
+      }
+    }
+
+    // Initial load
+    updateMonitor();
+
+    // Auto-refresh every 5 seconds
+    setInterval(updateMonitor, 5000);
+  </script>
+</body>
+</html>
