@@ -27,6 +27,16 @@ export interface CalendarEntry {
     opportunity_score?: 'dataforseo' | 'claude-ai';
     competitor_count?: 'dataforseo' | 'claude-ai';
   };
+  seo_insights?: {
+    priority_score?: number;
+    data_source?: 'dataforseo' | 'estimated';
+    icon_type?: 'metrics' | 'robot';
+    geo_optimized?: boolean;
+    strategic_reasoning?: string;
+    cpc?: number;
+    real_data?: boolean;
+    [key: string]: any;
+  };
 }
 
 export interface PaginatedResponse {

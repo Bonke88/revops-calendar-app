@@ -263,17 +263,6 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
     setDeclineReason('');
   }
 
-  function getDataSourceIcon(source?: 'dataforseo' | 'claude-ai') {
-    if (source === 'dataforseo') return '📊';
-    if (source === 'claude-ai') return '🤖';
-    return '❓';
-  }
-
-  function getDataSourceLabel(source?: 'dataforseo' | 'claude-ai') {
-    if (source === 'dataforseo') return 'DataForSEO';
-    if (source === 'claude-ai') return 'Claude AI';
-    return 'Unknown';
-  }
 
   if (loading) {
     return (
