@@ -120,8 +120,8 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
           bVal = b.difficulty || 0;
           break;
         case 'opportunity_score':
-          aVal = a.opportunity_score || 0;
-          bVal = b.opportunity_score || 0;
+          aVal = a.seo_insights?.priority_score || a.opportunity_score || 0;
+          bVal = b.seo_insights?.priority_score || b.opportunity_score || 0;
           break;
         case 'created_at':
           aVal = new Date(a.created_at).getTime();
@@ -347,7 +347,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
               className="w-full text-sm rounded border-gray-300"
             >
               <option value="all">All</option>
-              <option value="easy">Easy (&lt;30)</option>
+              <option value="easy">Easy (Less than 30)</option>
               <option value="medium">Medium (30-50)</option>
               <option value="hard">Hard (50-70)</option>
               <option value="very-hard">Very Hard (70+)</option>
@@ -364,7 +364,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
               <option value="all">All</option>
               <option value="high">High (70+)</option>
               <option value="medium">Medium (40-69)</option>
-              <option value="low">Low (&lt;40)</option>
+              <option value="low">Low (Less than 40)</option>
             </select>
           </div>
 
