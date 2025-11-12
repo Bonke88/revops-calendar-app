@@ -517,10 +517,15 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
-                      {entry.seo_insights?.data_source === 'dataforseo' ? (
+                      {entry.seo_insights?.data_source === 'dataforseo' && entry.search_volume !== null && entry.search_volume !== 0 ? (
                         <>
                           <span>📊</span>
-                          <span>{entry.search_volume?.toLocaleString()}</span>
+                          <span>{entry.search_volume.toLocaleString()}</span>
+                        </>
+                      ) : entry.seo_insights?.data_source === 'dataforseo' && entry.search_volume === 0 ? (
+                        <>
+                          <span>📊</span>
+                          <span>0</span>
                         </>
                       ) : (
                         <span>🤖</span>
@@ -529,7 +534,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center space-x-1">
-                      {entry.seo_insights?.data_source === 'dataforseo' ? (
+                      {entry.seo_insights?.data_source === 'dataforseo' && entry.difficulty !== null ? (
                         <>
                           <span>📊</span>
                           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full bg-${getDifficultyColor(entry.difficulty)}-100 text-${getDifficultyColor(entry.difficulty)}-700`}>
@@ -543,18 +548,16 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center space-x-1">
-                      {entry.seo_insights?.priority_score ? (
-                        entry.seo_insights?.data_source === 'dataforseo' ? (
-                          <>
-                            <span>📊</span>
-                            <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>🤖</span>
-                            <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
-                          </>
-                        )
+                      {entry.seo_insights?.data_source === 'dataforseo' && entry.seo_insights?.priority_score ? (
+                        <>
+                          <span>📊</span>
+                          <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
+                        </>
+                      ) : entry.seo_insights?.priority_score ? (
+                        <>
+                          <span>🤖</span>
+                          <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
+                        </>
                       ) : (
                         <span>🤖</span>
                       )}
