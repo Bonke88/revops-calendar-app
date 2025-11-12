@@ -31,6 +31,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
   const [minVolume, setMinVolume] = useState<string>('');
   const [articleTypeFilter, setArticleTypeFilter] = useState<string>('all');
   const [opportunityFilter, setOpportunityFilter] = useState<string>('all');
+  const [createdFilter, setCreatedFilter] = useState<string>('all');
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>('opportunity_score');
@@ -42,7 +43,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
 
   useEffect(() => {
     applyFiltersAndSort();
-  }, [entries, difficultyFilter, dataSourceFilter, minVolume, articleTypeFilter, opportunityFilter, sortField, sortDirection]);
+  }, [entries, difficultyFilter, dataSourceFilter, minVolume, articleTypeFilter, opportunityFilter, createdFilter, sortField, sortDirection]);
 
   async function loadPendingApprovals() {
     try {
@@ -59,16 +60,27 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
   function applyFiltersAndSort() {
     let filtered = [...entries];
 
-    // Difficulty filter
+    // Difficulty filter (only applies to real data)
     if (difficultyFilter !== 'all') {
-      filtered = filtered.filter(entry => {
-        const diff = entry.difficulty || 0;
-        if (difficultyFilter === 'easy') return diff < 30;
-        if (difficultyFilter === 'medium') return diff >= 30 && diff < 50;
-        if (difficultyFilter === 'hard') return diff >= 50 && diff < 70;
-        if (difficultyFilter === 'very-hard') return diff >= 70;
-        return true;
-      });
+      if (difficultyFilter === 'ai-generated') {
+        // Show only AI-generated keywords
+        filtered = filtered.filter(entry =>
+          entry.seo_insights?.data_source !== 'dataforseo'
+        );
+      } else {
+        // For Easy/Medium/Hard/Very Hard - only show real data
+        filtered = filtered.filter(entry => {
+          // Must have real data
+          if (entry.seo_insights?.data_source !== 'dataforseo') return false;
+
+          const diff = entry.difficulty || 0;
+          if (difficultyFilter === 'easy') return diff < 30;
+          if (difficultyFilter === 'medium') return diff >= 30 && diff < 50;
+          if (difficultyFilter === 'hard') return diff >= 50 && diff < 70;
+          if (difficultyFilter === 'very-hard') return diff >= 70;
+          return true;
+        });
+      }
     }
 
     // Data source filter (using seo_insights)
@@ -85,21 +97,54 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
       filtered = filtered.filter(entry => entry.article_type === articleTypeFilter);
     }
 
-    // Opportunity score filter
+    // Opportunity score filter (only applies to real data unless AI-generated selected)
     if (opportunityFilter !== 'all') {
+      if (opportunityFilter === 'ai-generated') {
+        // Show only AI-generated keywords
+        filtered = filtered.filter(entry =>
+          entry.seo_insights?.data_source !== 'dataforseo'
+        );
+      } else {
+        // For High/Medium/Low - only show real data
+        filtered = filtered.filter(entry => {
+          // Must have real data
+          if (entry.seo_insights?.data_source !== 'dataforseo') return false;
+
+          const score = entry.seo_insights?.priority_score || 0;
+          if (opportunityFilter === 'high') return score >= 70;
+          if (opportunityFilter === 'medium') return score >= 40 && score < 70;
+          if (opportunityFilter === 'low') return score < 40;
+          return true;
+        });
+      }
+    }
+
+    // Min volume filter (only applies to real data)
+    if (minVolume && !isNaN(parseInt(minVolume))) {
+      const min = parseInt(minVolume);
       filtered = filtered.filter(entry => {
-        const score = entry.seo_insights?.priority_score || 0;
-        if (opportunityFilter === 'high') return score >= 70;
-        if (opportunityFilter === 'medium') return score >= 40 && score < 70;
-        if (opportunityFilter === 'low') return score < 40;
-        return true;
+        // Only filter real data keywords by volume
+        if (entry.seo_insights?.data_source !== 'dataforseo') return false;
+        return (entry.search_volume || 0) >= min;
       });
     }
 
-    // Min volume filter
-    if (minVolume && !isNaN(parseInt(minVolume))) {
-      const min = parseInt(minVolume);
-      filtered = filtered.filter(entry => (entry.search_volume || 0) >= min);
+    // Created date filter (weekly grouping)
+    if (createdFilter !== 'all') {
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0));
+
+      filtered = filtered.filter(entry => {
+        const created = new Date(entry.created_at);
+        const daysDiff = Math.floor((todayStart.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (createdFilter === 'today') return daysDiff === 0;
+        if (createdFilter === 'this-week') return daysDiff < 7;
+        if (createdFilter === 'last-week') return daysDiff >= 7 && daysDiff < 14;
+        if (createdFilter === 'this-month') return daysDiff < 30;
+        if (createdFilter === 'older') return daysDiff >= 30;
+        return true;
+      });
     }
 
     // Sorting
@@ -314,7 +359,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <div>
             <label className="block text-xs text-gray-700 mb-1">Data Source</label>
             <select
@@ -347,10 +392,11 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
               className="w-full text-sm rounded border-gray-300"
             >
               <option value="all">All</option>
-              <option value="easy">Easy (Less than 30)</option>
-              <option value="medium">Medium (30-50)</option>
-              <option value="hard">Hard (50-70)</option>
-              <option value="very-hard">Very Hard (70+)</option>
+              <option value="ai-generated">🤖 AI Generated</option>
+              <option value="easy">📊 Easy (Less than 30)</option>
+              <option value="medium">📊 Medium (30-50)</option>
+              <option value="hard">📊 Hard (50-70)</option>
+              <option value="very-hard">📊 Very Hard (70+)</option>
             </select>
           </div>
 
@@ -362,9 +408,10 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
               className="w-full text-sm rounded border-gray-300"
             >
               <option value="all">All</option>
-              <option value="high">High (70+)</option>
-              <option value="medium">Medium (40-69)</option>
-              <option value="low">Low (Less than 40)</option>
+              <option value="ai-generated">🤖 AI Generated</option>
+              <option value="high">📊 High (70+)</option>
+              <option value="medium">📊 Medium (40-69)</option>
+              <option value="low">📊 Low (Less than 40)</option>
             </select>
           </div>
 
@@ -384,6 +431,22 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs text-gray-700 mb-1">Created</label>
+            <select
+              value={createdFilter}
+              onChange={(e) => setCreatedFilter(e.currentTarget.value)}
+              className="w-full text-sm rounded border-gray-300"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="this-week">This Week</option>
+              <option value="last-week">Last Week</option>
+              <option value="this-month">This Month</option>
+              <option value="older">Older</option>
+            </select>
+          </div>
+
           <div className="flex items-end">
             <button
               onClick={() => {
@@ -392,6 +455,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                 setMinVolume('');
                 setArticleTypeFilter('all');
                 setOpportunityFilter('all');
+                setCreatedFilter('all');
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
             >
