@@ -29,6 +29,8 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [dataSourceFilter, setDataSourceFilter] = useState<string>('all');
   const [minVolume, setMinVolume] = useState<string>('');
+  const [articleTypeFilter, setArticleTypeFilter] = useState<string>('all');
+  const [opportunityFilter, setOpportunityFilter] = useState<string>('all');
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>('opportunity_score');
@@ -40,7 +42,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
 
   useEffect(() => {
     applyFiltersAndSort();
-  }, [entries, difficultyFilter, dataSourceFilter, minVolume, sortField, sortDirection]);
+  }, [entries, difficultyFilter, dataSourceFilter, minVolume, articleTypeFilter, opportunityFilter, sortField, sortDirection]);
 
   async function loadPendingApprovals() {
     try {
@@ -69,14 +71,28 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
       });
     }
 
-    // Data source filter
+    // Data source filter (using seo_insights)
     if (dataSourceFilter !== 'all') {
       filtered = filtered.filter(entry => {
-        const sources = entry.data_sources;
-        if (!sources) return dataSourceFilter === 'claude-ai';
+        const dataSource = entry.seo_insights?.data_source;
+        if (!dataSource) return dataSourceFilter === 'estimated';
+        return dataSource === dataSourceFilter;
+      });
+    }
 
-        // Check if any metric is from the selected source
-        return Object.values(sources).some(source => source === dataSourceFilter);
+    // Article type filter
+    if (articleTypeFilter !== 'all') {
+      filtered = filtered.filter(entry => entry.article_type === articleTypeFilter);
+    }
+
+    // Opportunity score filter
+    if (opportunityFilter !== 'all') {
+      filtered = filtered.filter(entry => {
+        const score = entry.seo_insights?.priority_score || 0;
+        if (opportunityFilter === 'high') return score >= 70;
+        if (opportunityFilter === 'medium') return score >= 40 && score < 70;
+        if (opportunityFilter === 'low') return score < 40;
+        return true;
       });
     }
 
@@ -298,22 +314,7 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs text-gray-700 mb-1">Difficulty</label>
-            <select
-              value={difficultyFilter}
-              onChange={(e) => setDifficultyFilter(e.currentTarget.value)}
-              className="w-full text-sm rounded border-gray-300"
-            >
-              <option value="all">All Difficulties</option>
-              <option value="easy">Easy (&lt;30)</option>
-              <option value="medium">Medium (30-50)</option>
-              <option value="hard">Hard (50-70)</option>
-              <option value="very-hard">Very Hard (70+)</option>
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-xs text-gray-700 mb-1">Data Source</label>
             <select
@@ -322,20 +323,65 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
               className="w-full text-sm rounded border-gray-300"
             >
               <option value="all">All Sources</option>
-              <option value="dataforseo">📊 DataForSEO Only</option>
-              <option value="claude-ai">🤖 Claude AI Only</option>
+              <option value="dataforseo">📊 Real Data</option>
+              <option value="estimated">🤖 AI Generated</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs text-gray-700 mb-1">Min Search Volume</label>
+            <label className="block text-xs text-gray-700 mb-1">Volume</label>
             <input
               type="number"
               value={minVolume}
               onChange={(e) => setMinVolume(e.currentTarget.value)}
-              placeholder="e.g., 100"
+              placeholder="Min (e.g., 50)"
               className="w-full text-sm rounded border-gray-300"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-700 mb-1">Difficulty</label>
+            <select
+              value={difficultyFilter}
+              onChange={(e) => setDifficultyFilter(e.currentTarget.value)}
+              className="w-full text-sm rounded border-gray-300"
+            >
+              <option value="all">All</option>
+              <option value="easy">Easy (&lt;30)</option>
+              <option value="medium">Medium (30-50)</option>
+              <option value="hard">Hard (50-70)</option>
+              <option value="very-hard">Very Hard (70+)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-700 mb-1">Opportunity</label>
+            <select
+              value={opportunityFilter}
+              onChange={(e) => setOpportunityFilter(e.currentTarget.value)}
+              className="w-full text-sm rounded border-gray-300"
+            >
+              <option value="all">All</option>
+              <option value="high">High (70+)</option>
+              <option value="medium">Medium (40-69)</option>
+              <option value="low">Low (&lt;40)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-700 mb-1">Type</label>
+            <select
+              value={articleTypeFilter}
+              onChange={(e) => setArticleTypeFilter(e.currentTarget.value)}
+              className="w-full text-sm rounded border-gray-300"
+            >
+              <option value="all">All Types</option>
+              <option value="guide">Guide</option>
+              <option value="comparison">Comparison</option>
+              <option value="listicle">Listicle</option>
+              <option value="checklist">Checklist</option>
+              <option value="tutorial">Tutorial</option>
+            </select>
           </div>
 
           <div className="flex items-end">
@@ -344,10 +390,12 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                 setDifficultyFilter('all');
                 setDataSourceFilter('all');
                 setMinVolume('');
+                setArticleTypeFilter('all');
+                setOpportunityFilter('all');
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
             >
-              Clear Filters
+              Clear All
             </button>
           </div>
         </div>
@@ -551,11 +599,6 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                       {entry.seo_insights?.data_source === 'dataforseo' && entry.seo_insights?.priority_score ? (
                         <>
                           <span>📊</span>
-                          <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
-                        </>
-                      ) : entry.seo_insights?.priority_score ? (
-                        <>
-                          <span>🤖</span>
                           <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
                         </>
                       ) : (
