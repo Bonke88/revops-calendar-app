@@ -528,37 +528,47 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
-                      <span>{entry.search_volume?.toLocaleString() || 'N/A'}</span>
-                      <span
-                        title={getDataSourceLabel(entry.data_sources?.search_volume)}
-                        className="text-lg cursor-help"
-                      >
-                        {getDataSourceIcon(entry.data_sources?.search_volume)}
-                      </span>
+                      {entry.seo_insights?.data_source === 'dataforseo' ? (
+                        <>
+                          <span>📊</span>
+                          <span>{entry.search_volume?.toLocaleString()}</span>
+                        </>
+                      ) : (
+                        <span>🤖</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center space-x-1">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full bg-${getDifficultyColor(entry.difficulty)}-100 text-${getDifficultyColor(entry.difficulty)}-700`}>
-                        {entry.difficulty || 'N/A'}
-                      </span>
-                      <span
-                        title={getDataSourceLabel(entry.data_sources?.difficulty)}
-                        className="text-lg cursor-help"
-                      >
-                        {getDataSourceIcon(entry.data_sources?.difficulty)}
-                      </span>
+                      {entry.seo_insights?.data_source === 'dataforseo' ? (
+                        <>
+                          <span>📊</span>
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full bg-${getDifficultyColor(entry.difficulty)}-100 text-${getDifficultyColor(entry.difficulty)}-700`}>
+                            {entry.difficulty}
+                          </span>
+                        </>
+                      ) : (
+                        <span>🤖</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center space-x-1">
-                      <span className="font-medium text-green-600">{entry.opportunity_score || 'N/A'}</span>
-                      <span
-                        title={getDataSourceLabel(entry.data_sources?.opportunity_score)}
-                        className="text-lg cursor-help"
-                      >
-                        {getDataSourceIcon(entry.data_sources?.opportunity_score)}
-                      </span>
+                      {entry.seo_insights?.priority_score ? (
+                        entry.seo_insights?.data_source === 'dataforseo' ? (
+                          <>
+                            <span>📊</span>
+                            <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🤖</span>
+                            <span className="font-medium text-green-600">{entry.seo_insights.priority_score}</span>
+                          </>
+                        )
+                      ) : (
+                        <span>🤖</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
@@ -574,8 +584,12 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                       minute: '2-digit'
                     })}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
-                    {entry.notes || '-'}
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    <div className="max-w-lg">
+                      <p className="whitespace-normal break-words">
+                        {entry.notes || '-'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ))}
