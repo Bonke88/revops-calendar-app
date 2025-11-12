@@ -82,7 +82,7 @@ export async function POST({ params }) {
     const type = entry.article_type || 'guide';
 
     const githubToken = import.meta.env.GITHUB_TOKEN;
-    const githubRepo = 'Bonke88/revops-partner'; // Update if different
+    const githubRepo = 'Bonke88/revops-partner-site';
 
     if (githubToken) {
       try {
