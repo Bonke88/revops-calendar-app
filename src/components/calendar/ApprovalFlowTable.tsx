@@ -493,6 +493,15 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Type
                 </th>
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => toggleSort('created_at')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Created</span>
+                    <SortIcon field="created_at" />
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Notes
                 </th>
@@ -556,6 +565,14 @@ export default function ApprovalFlowTable({ onApprove }: ApprovalFlowProps) {
                     <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                       {entry.article_type}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(entry.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                     {entry.notes || '-'}
