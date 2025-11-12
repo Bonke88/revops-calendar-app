@@ -168,7 +168,8 @@ export async function GET({ url }) {
         opportunity_score,
         data_sources,
         created_at,
-        notes
+        notes,
+        seo_insights
       `)
       .eq('status', 'suggested')
       .order('priority_score', { ascending: false })
